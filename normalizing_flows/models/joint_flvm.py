@@ -115,6 +115,7 @@ class JointFlowLVM(TrackableModule):
     
     @tf.function
     def eval_discriminators_on_batch(self, x, y):
+        # import ipdb;ipdb.set_trace()
         x_pred = self.predict_x(y)
         y_pred = self.predict_y(x)
         # evaluate discriminators
@@ -160,7 +161,8 @@ class JointFlowLVM(TrackableModule):
                     # train generators
                     g_obj, nll_x, nll_y, gx_loss, gy_loss, gx_aux, gy_aux = self.train_generators_on_batch(x, y, alpha=alpha, lam=utils.var(lam))
                     utils.update_metrics(hist, g_obj=g_obj.numpy(), gx_loss=gx_loss.numpy(), gy_loss=dy_loss.numpy(),
-                                         nll_x=nll_x.numpy(), nll_y=nll_y.numpy())
+                                         nll_x=nll_x.numpy(), nll_y=nll_y.numpy(),
+                                         dx_loss=dx_loss.numpy(), dy_loss=dy_loss.numpy(), gx_aux=gx_aux.numpy(), gy_aux=gy_aux.numpy())
                     prog.update(1)
                     prog.set_postfix(utils.get_metrics(hist))
                 lam.assign_sub(lam_decay)
@@ -261,7 +263,7 @@ class JointFlowLVM(TrackableModule):
     
     def sample_predict_x(self, y, n=1, temperature=0.5, return_log_prob=False):
         assert self.input_shape is not None, 'model not initialized'
-        z = self.encode_y(x)
+        z = self.encode_y(y)
         eps = tf.random.normal((z.shape[0], n,*z.shape[1:]), stddev=temperature)
         zs = eps + tf.expand_dims(z, axis=1)
         zs = tf.reshape(zs, (n*z.shape[0], *z.shape[1:]))

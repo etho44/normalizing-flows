@@ -1,4 +1,4 @@
-from .transform import Transform, AmortizedTransform
+from .transform import Transform
 from .bijector import TransformBijector
 from .flow import Flow
 from .invert import Invert

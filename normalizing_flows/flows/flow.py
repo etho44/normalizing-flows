@@ -1,9 +1,9 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 from typing import List
-from .transform import Transform, AmortizedTransform
+from .transform import Transform
 
-class Flow(AmortizedTransform):
+class Flow(Transform):
     def __init__(self, steps: List[Transform], input_shape=None, name='flow', *args, **kwargs):
         """
         Constructs a new flow as a sequence of transforms or sub-flows.
@@ -21,7 +21,7 @@ class Flow(AmortizedTransform):
         # add num_flows alias for legacy code
         self.num_flows = self.num_steps
         super().__init__(*args, input_shape=input_shape, name=name, **kwargs)
-
+    
     @staticmethod
     def uniform(num_flows, transform_init):
         """
@@ -34,17 +34,17 @@ class Flow(AmortizedTransform):
         transform_type = type(transforms[0])
         assert all([transform_type == type(t) for t in transforms]), "All transforms should have the same type for uniform flow"
         return Flow(transforms)
-
+    
     def _forward_shape(self, input_shape):
         for step in self.steps:
             input_shape = step._forward_shape(input_shape)
         return input_shape
-
+    
     def _inverse_shape(self, input_shape):
         for step in reversed(self.steps):
             input_shape = step._inverse_shape(input_shape)
         return input_shape
-
+    
     def _initialize(self, input_shape):
         for step in self.steps:
             step.initialize(input_shape)
@@ -67,7 +67,7 @@ class Flow(AmortizedTransform):
             zs.append(z_i)
             ldj += ldj_i
         return (zs, ldj) if return_sequence else (zs[-1], ldj)
-
+    
     def _inverse(self, z, *params: tf.Tensor, return_sequence=False, **kwargs):
         """
         Computes the inverse pass of the flow: z_0 = f^-1_1 . f^-1_2 ... f^-1_k(z)
@@ -86,13 +86,12 @@ class Flow(AmortizedTransform):
             zs.append(z_i)
             ldj += ldj_i
         return (zs, ldj) if return_sequence else (zs[-1], ldj)
-
+    
     def _regularization_loss(self):
         return tf.math.add_n([t.regularization_loss() for t in self.steps])
 
     def _param_count(self, shape):
-        return tf.math.reduce_sum([t.param_count(shape) for t in self.steps if isinstance(t, AmortizedTransform)])
-
+        return tf.math.reduce_sum([t.param_count(shape) for t in self.steps])
+    
     def _create_variables(self, shape, initializer=None, **kwargs):
-        return sum([t.create_variables(shape, initializer, **kwargs) \
-                    for t in self.steps if isinstance(t, AmortizedTransform)],[])
+        return sum([t.create_variables(shape, initializer, **kwargs) for t in self.steps],[])

@@ -1,8 +1,8 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
-from normalizing_flows.flows import AmortizedTransform
+from normalizing_flows.flows import Transform
 
-class TriangularSylvester(AmortizedTransform):
+class TriangularSylvester(Transform):
     def __init__(self, flip_z=False, **kwparams):
         """
         Triangular Sylvester flow (T-SNF)
